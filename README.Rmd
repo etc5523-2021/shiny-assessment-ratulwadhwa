@@ -11,11 +11,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-# shiny-template
+# ETC5523: Communicating with Data- Assignment 2
 
-Rename the above to something more meaningful.
-
-## YOUR NAME + student id
+## Ratul Wadhwa + 32055587
 
 This is a template that contains materials to create a shiny gadget application
 for assessment 2. You will need the following packages installed to 
@@ -35,5 +33,5 @@ and list any additional packages required to run the gadget.
 Add the session info here.
 
 ```{r session-info}
-# use utils::sessionInfo() or sessioninfo::session_info()
+sessioninfo::session_info()
 ```
