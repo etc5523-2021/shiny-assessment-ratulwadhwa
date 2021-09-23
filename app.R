@@ -40,7 +40,7 @@ ui <- fluidPage(style = "background-color:#d4ebf2;",
           )
         )
       ),
-      align = "center", style = "background-color:#d4ebf2;", plotlyOutput("chart", width = "90%", height = "750"),
+      align = "center", style = "background-color:#d4ebf2;", plotlyOutput("chart", width = "90%", height = "700"),
       sliderInput("year",
         "Year",
         min = 2000,
@@ -50,9 +50,37 @@ ui <- fluidPage(style = "background-color:#d4ebf2;",
         width = "100%"
       )
     ),
-    tabPanel("table", dataTableOutput("table"), icon = icon("table")),
+    tabPanel("table", dataTableOutput("table", height = "700"), icon = icon("table"),
+             fluidRow(radioButtons("tab", "Options",
+                                   c("Cooking" = "cooking" ,
+                                     "GDP" ="gdp_per_capita"
+                                     # "Total Population" = "total_population"
+                                   ),
+                                   selected = "cooking",
+                                   # tableOutput("tabPlot")
+             )),
+             sliderInput("Year",
+                         "Year",
+                         min = 2000,
+                         max = 2016,
+                         value = c(2000, 2016),
+                         sep = "",
+                         width = "95%"
+             )),
 
-    tabPanel("about", icon = icon("question"))
+    tabPanel("about", icon = icon("question"),
+             fluidRow(
+               column(12, h1('ETC5523: Communicating with Data',  align = "center", style = "font-size: 30px;"),
+                       h2('Assessment 2',  align = "center", style = "font-size: 30px;"),
+                      h3("Ratul Wadhwa (32055587)", align = "center", style = "font-size: 18px;"),
+                      h6(textOutput('text_out')),
+                      tags$head(tags$style("#text_out{color: #AA4371;
+                                 font-size: 20px;
+                                 font-style: italic;
+                                 }")),
+                      uiOutput("about")
+               )
+             ))
 
   )
 )
@@ -61,7 +89,12 @@ ui <- fluidPage(style = "background-color:#d4ebf2;",
 server <- function(input, output, session) {
   # Define reactive expressions here for filtering data
   output$text_out <- renderText({
-       paste("This is the second assessment for ect 5523, hello hello link to my git ", input$text_input)
+       paste("This assessment is an interactive web application using the shiny framework,
+             I have tired to reproduce two interactive graphics from the Our World in Data website on the topic of air pollution.
+             The shiny frame work can be found at Github repository(below).
+             The 'Chart' panel contains a plot created with plotly which shows Access to clean fuels for cooking vs. GDP per capita.
+             The 'Table' panel contains an interactive table that give details about Access to clean fuels and technologies for cooking
+             (% of population).", input$text_input)
      })
 
   # Define outputs here
@@ -80,7 +113,6 @@ server <- function(input, output, session) {
     tidy_fuels <- tidy_fuels %>%
       filter(year >= input$year[1] & year <= input$year[2])
 
-
     tidy_fuels <- tidy_fuels %>%
       plot_ly(x = ~gdp_per_capita, y = ~cooking, color = ~continent,
               size = ~total_population, split = ~country,
@@ -88,20 +120,22 @@ server <- function(input, output, session) {
                            "<br>Proportion: ", tidy_fuels$cooking,
                            "<br>Population: ", tidy_fuels$total_population,
                            "<br>GDP per capita: ", round(tidy_fuels$gdp_per_capita, 3)),
-              hoverinfo = 'text')
+              hoverinfo = 'text')%>%
+
+      layout(paper_bgcolor='#FAEBD7',
+             plot_bgcolor='#FAEBD7',
+             xaxis = list(color = '#006400'),
+             yaxis = list(color = '#006400', title = "Access to clean fuels and technologies for cooking", ticksuffix = "%"),
+             title = "Access to clean fuels for cooking vs. GDP per capita") %>%
+
+      config(displaylogo = FALSE,
+             modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "zoom2d", "pan2d"))
 
 
     if(input$year[1] != input$year[2]){
       tidy_fuels <- tidy_fuels %>%
         add_trace(mode = 'lines+markers')
     }
-
-    tidy_fuels <- tidy_fuels %>%
-      layout(title = "Access to clean fuels for cooking vs. GDP per capita",
-             yaxis = list(title = "Access to clean fuels and technologies for cooking", ticksuffix = "%")) %>%
-
-      config(displaylogo = FALSE,
-             modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "zoom2d", "pan2d"))
 
     if(!input$linear_scale){
       tidy_fuels <- layout(tidy_fuels, xaxis = list(title = 'GDP per capita (int.-$)', type = "log", ticksuffix = "$", nticks=3))
@@ -116,14 +150,16 @@ server <- function(input, output, session) {
 
 
 
-  output$table <- renderDataTable({
-    NULL
+  url <- a("GitHub", href="https://github.com/etc5523-2021/shiny-assessment-ratulwadhwa")
+  url2 <- a("Our World in Data", href="https://cwd.numbat.space/tutorials/tutorial-07sol.html")
+
+  output$about <- renderUI({
+    tagList("GitHub URL link:", url ,
+            ", Sources URL link:", url2)
+
   })
 
-  url <- a("GitHub", href="https://www.google.com/")
-  output$about <- renderUI({
-    tagList("URL link:", url)
-  })
+
 }
 
 runApp(shinyApp(ui, server))
