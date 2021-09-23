@@ -114,13 +114,24 @@ server <- function(input, output, session) {
       filter(year >= input$year[1] & year <= input$year[2])
 
     tidy_fuels <- tidy_fuels %>%
-      plot_ly(x = ~gdp_per_capita, y = ~cooking, color = ~continent,
-              size = ~total_population, split = ~country,
+      group_by(country)%>%
+      highlight_key(~country) %>%
+      plot_ly(x = ~gdp_per_capita,
+              y = ~cooking,
+              color = ~continent,
+              size = ~total_population,
+              mode = 'lines+markers',
               text = paste("Country: ", tidy_fuels$country,
                            "<br>Proportion: ", tidy_fuels$cooking,
                            "<br>Population: ", tidy_fuels$total_population,
                            "<br>GDP per capita: ", round(tidy_fuels$gdp_per_capita, 3)),
-              hoverinfo = 'text')%>%
+              hoverinfo = 'text') %>%
+
+      highlight(on = "plotly_click", off = "plotly_doubleclick",
+                selected = attrs_selected(showlegend = FALSE))%>%
+
+     # highlight(on = "plotly_hover", off = "plotly_doubleclick")
+
 
       layout(paper_bgcolor='#FAEBD7',
              plot_bgcolor='#FAEBD7',
@@ -131,11 +142,6 @@ server <- function(input, output, session) {
       config(displaylogo = FALSE,
              modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "zoom2d", "pan2d"))
 
-
-    if(input$year[1] != input$year[2]){
-      tidy_fuels <- tidy_fuels %>%
-        add_trace(mode = 'lines+markers')
-    }
 
     if(!input$linear_scale){
       tidy_fuels <- layout(tidy_fuels, xaxis = list(title = 'GDP per capita (int.-$)', type = "log", ticksuffix = "$", nticks=3))
@@ -149,6 +155,43 @@ server <- function(input, output, session) {
   })
 
 
+
+  output$table <- renderDataTable({
+
+    if(input$tab == "cooking"){
+
+      tidy_fuels %>%
+        filter(year == input$Year[1] | year == input$Year[2]) %>%
+        select(-c(code, continent, total_population, gdp_per_capita)) %>%
+        pivot_wider(names_from = year ,
+                    values_from = cooking) %>%
+        mutate(Absolute = .[[3]] - .[[2]],
+               Relative = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
+        datatable(escape = FALSE,
+                  caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
+                                                              color: black; font-family: Arial;
+                                                              font-size: 150% ;', 'Access to clean fuels and technologies for cooking')) %>%
+        formatRound('Absolute', digits = 3) %>%
+        formatRound('Relative', digits = 3)}
+
+
+
+    else{
+      tidy_fuels %>%
+        filter(year == input$Year[1] | year == input$Year[2]) %>%
+        select(-c(code, continent, total_population, cooking)) %>%
+        pivot_wider(names_from = year ,
+                    values_from = gdp_per_capita) %>%
+        mutate(Absolute = .[[3]] - .[[2]],
+               Relative = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
+        datatable(escape = FALSE,
+                  caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
+                                                              color: black; font-family: Arial;
+                                                              font-size: 150% ;', '')) %>%
+        formatRound('Absolute', digits = 3) %>%
+        formatRound('Relative', digits = 3)}
+
+  })
 
   url <- a("GitHub", href="https://github.com/etc5523-2021/shiny-assessment-ratulwadhwa")
   url2 <- a("Our World in Data", href="https://cwd.numbat.space/tutorials/tutorial-07sol.html")
