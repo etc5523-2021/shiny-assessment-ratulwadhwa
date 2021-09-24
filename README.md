@@ -31,7 +31,10 @@ editor). This will pop a new window where we can explore the interactive
 graphics and play around the different features of the plot. The
 features include toggling between a linear axis and a log axis on the
 chart, hides data points, selects a year on the slider, hovering and
-highlighting etc.
+highlighting etc. The slider on the **chart tab** can also be used to
+change selections in the **table tab**, i.e the table updates according
+to a change from the selection input and slider provided in the chart
+tab.
 
 ## Session Info
 
