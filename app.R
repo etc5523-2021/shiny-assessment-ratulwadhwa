@@ -4,6 +4,7 @@ library(tidyverse)
 library(plotly)
 library(here)
 library(scales)
+library(glue)
 
 # once you've prepared the data uncomment this line
 tidy_fuels <- read_csv(here("data", "cooking.csv"))

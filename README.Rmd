@@ -20,13 +20,14 @@ for assessment 2. You will need the following packages installed to
 generate the gadget from this template:
 
 ```{r, eval = FALSE}
-install.packages(c("shiny", "crosstalk", "plotly", "DT", "tidyverse", "here"))
+install.packages(c("shiny", "crosstalk", "plotly", "DT", "tidyverse", "here", "scales", "glue"))
 ```
 
 ## How to run the app
 
-Describe how to run the gadget and use it here. Include any additional comments
-and list any additional packages required to run the gadget. 
+This assessment is an interactive web application using the shiny framework, I have tired to reproduce two interactive graphics from the Our World in Data website on the topic of air pollution. The shiny frame work can be found at [Github repository](https://github.com/etc5523-2021/shiny-assessment-ratulwadhwa). The 'Chart' panel contains a plot created with plotly which shows Access to clean fuels for cooking vs. GDP per capita. The 'Table' panel contains an interactive table that give details about Access to clean fuels and technologies for cooking (% of population). 
+
+To run the shiny framework, open the **app.R** present in the folder(shiny-assessment-ratuwadhwa) and click on Run App(top right on editor). This will pop a new window where we can explore the interactive graphics and play around the different features of the plot. The features include toggling between a linear axis and a log axis on the chart, hides data points, selects a year on the slider, hovering and highlighting etc.
 
 ## Session Info
 
