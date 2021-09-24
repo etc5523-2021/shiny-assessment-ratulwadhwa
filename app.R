@@ -9,7 +9,7 @@ library(scales)
 tidy_fuels <- read_csv(here("data", "cooking.csv"))
 # you might want to use highlight_key here
 
-ui <- fluidPage(style = "background-color:#d4ebf2;",
+ui <- fluidPage(style = "background-color:#F3FCEF;",
   title = "Indoor Air Pollution",
   tabsetPanel(
     tabPanel("chart",
@@ -40,7 +40,7 @@ ui <- fluidPage(style = "background-color:#d4ebf2;",
           )
         )
       ),
-      align = "center", style = "background-color:#d4ebf2;", plotlyOutput("chart", width = "90%", height = "700"),
+      align = "center", style = "background-color:#F3FCEF;", plotlyOutput("chart", width = "90%", height = "700"),
       sliderInput("year",
         "Year",
         min = 2000,
@@ -50,39 +50,29 @@ ui <- fluidPage(style = "background-color:#d4ebf2;",
         width = "100%"
       )
     ),
-    tabPanel("table", dataTableOutput("table", height = "700"), icon = icon("table"),
-             fluidRow(radioButtons("tab", "Options",
-                                   c("Cooking" = "cooking" ,
-                                     "GDP" ="gdp_per_capita"
-                                     # "Total Population" = "total_population"
-                                   ),
-                                   selected = "cooking",
-                                   # tableOutput("tabPlot")
-             )),
-             sliderInput("Year",
-                         "Year",
-                         min = 2000,
-                         max = 2016,
-                         value = c(2000, 2016),
-                         sep = "",
-                         width = "95%"
-             )),
+    tabPanel("table",icon = icon("table"),
+             tabsetPanel(tabPanel("Access to clean fuels and technologies for cooking",
+                        fluidRow(column(width = 12,
+                                 dataTableOutput("% of population",  height = "1000")))),
+                         tabPanel("GDP per capita (int.-$)",
+                        fluidRow(column(width = 12,
+                                 dataTableOutput("international-$", height = "1000")))),
+               tabPanel("Population",
+                        fluidRow(column(width = 12,
+                                 dataTableOutput("Population", height = "1000")))))
+    ),
 
     tabPanel("about", icon = icon("question"),
              fluidRow(
                column(12, h1('ETC5523: Communicating with Data',  align = "center", style = "font-size: 30px;"),
-                       h2('Assessment 2',  align = "center", style = "font-size: 30px;"),
-                      h3("Ratul Wadhwa (32055587)", align = "center", style = "font-size: 18px;"),
-                      h6(textOutput('text_out')),
-                      tags$head(tags$style("#text_out{color: #AA4371;
+                          h2('Assessment 2',  align = "center", style = "font-size: 30px;"),
+                          h3("Ratul Wadhwa (32055587)", align = "center", style = "font-size: 18px;"),
+                          h6(textOutput('text_out')),
+                             tags$head(tags$style("#text_out{color: #006400;
                                  font-size: 20px;
                                  font-style: italic;
                                  }")),
-                      uiOutput("about")
-               )
-             ))
-
-  )
+                          uiOutput("about")))))
 )
 
 
@@ -113,12 +103,15 @@ server <- function(input, output, session) {
     tidy_fuels <- tidy_fuels %>%
       filter(year >= input$year[1] & year <= input$year[2])
 
+    continentcolors <- c('#800080', '#008080', '#483D8B', '#DC582A', '#964B00', '#63666A')
+
     tidy_fuels <- tidy_fuels %>%
       group_by(country)%>%
       highlight_key(~country) %>%
       plot_ly(x = ~gdp_per_capita,
               y = ~cooking,
               color = ~continent,
+              colors = ~continentcolors,
               size = ~total_population,
               mode = 'lines+markers',
               text = paste("Country: ", tidy_fuels$country,
@@ -127,10 +120,8 @@ server <- function(input, output, session) {
                            "<br>GDP per capita: ", round(tidy_fuels$gdp_per_capita, 3)),
               hoverinfo = 'text') %>%
 
-      highlight(on = "plotly_click", off = "plotly_doubleclick",
+      highlight(on = "plotly_hover", off = "plotly_doubleclick",
                 selected = attrs_selected(showlegend = FALSE))%>%
-
-     # highlight(on = "plotly_hover", off = "plotly_doubleclick")
 
 
       layout(paper_bgcolor='#FAEBD7',
@@ -155,50 +146,104 @@ server <- function(input, output, session) {
   })
 
 
+  output$`% of population` <- renderDataTable({
+    if (!is.null(input$countries)){
+      tidy_fuels <- tidy_fuels %>%
+        filter(country %in% input$countries)
+    }
 
-  output$table <- renderDataTable({
+    if (input$small_countries) {
+      tidy_fuels <- tidy_fuels %>%
+        filter(total_population >= 1000000)
+    }
 
-    if(input$tab == "cooking"){
+    tidy_fuels <- tidy_fuels %>%
+      filter(year == input$year[1] | year == input$year[2])
 
-      tidy_fuels %>%
-        filter(year == input$Year[1] | year == input$Year[2]) %>%
-        select(-c(code, continent, total_population, gdp_per_capita)) %>%
-        pivot_wider(names_from = year ,
-                    values_from = cooking) %>%
-        mutate(Absolute = .[[3]] - .[[2]],
-               Relative = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
-        datatable(escape = FALSE,
-                  caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
+    tidy_fuels %>%
+      select(-c(code, continent,gdp_per_capita, total_population)) %>%
+      pivot_wider(names_from = year ,
+                  values_from = cooking) %>%
+      mutate(`Absolute Change` = .[[3]] - .[[2]],
+             `Relative Change` = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
+      datatable(escape = FALSE,
+                caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
                                                               color: black; font-family: Arial;
                                                               font-size: 150% ;', 'Access to clean fuels and technologies for cooking')) %>%
-        formatRound('Absolute', digits = 3) %>%
-        formatRound('Relative', digits = 3)}
-
-
-
-    else{
-      tidy_fuels %>%
-        filter(year == input$Year[1] | year == input$Year[2]) %>%
-        select(-c(code, continent, total_population, cooking)) %>%
-        pivot_wider(names_from = year ,
-                    values_from = gdp_per_capita) %>%
-        mutate(Absolute = .[[3]] - .[[2]],
-               Relative = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
-        datatable(escape = FALSE,
-                  caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
-                                                              color: black; font-family: Arial;
-                                                              font-size: 150% ;', '')) %>%
-        formatRound('Absolute', digits = 3) %>%
-        formatRound('Relative', digits = 3)}
+      formatRound('Absolute Change', digits = 3) %>%
+      formatRound('Relative Change', digits = 3)
 
   })
 
+
+  output$`international-$` <- renderDataTable({
+    if (!is.null(input$countries)){
+      tidy_fuels <- tidy_fuels %>%
+        filter(country %in% input$countries)
+    }
+
+    if (input$small_countries) {
+      tidy_fuels <- tidy_fuels %>%
+        filter(total_population >= 1000000)
+    }
+
+    tidy_fuels <- tidy_fuels %>%
+      filter(year == input$year[1] | year == input$year[2])
+
+    tidy_fuels %>%
+      mutate(gdp_per_capita = round(gdp_per_capita, 2)) %>%
+      select(-c(code, continent, total_population, cooking)) %>%
+      pivot_wider(names_from = year ,
+                  values_from = gdp_per_capita) %>%
+      mutate(`Absolute Change` = .[[3]] - .[[2]],
+             `Relative Change` = (.[[3]] - .[[2]])/.[[2]]*100 ) %>%
+      datatable(escape = FALSE,
+                caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
+                                                              color: black; font-family: Arial;
+                                                              font-size: 150% ;', 'GDP per capita (int.-$)')) %>%
+      formatRound('Absolute Change', digits = 3) %>%
+      formatRound('Relative Change', digits = 3)
+
+  })
+
+  output$Population <- renderDataTable({
+    if (!is.null(input$countries)){
+      tidy_fuels <- tidy_fuels %>%
+        filter(country %in% input$countries)
+    }
+
+    if (input$small_countries) {
+      tidy_fuels <- tidy_fuels %>%
+        filter(total_population >= 1000000)
+    }
+
+    tidy_fuels <- tidy_fuels %>%
+      filter(year == input$year[1] | year == input$year[2])
+
+    tidy_fuels %>%
+      select(-c(code, continent, cooking, gdp_per_capita)) %>%
+      pivot_wider(names_from = year ,
+                  values_from = total_population) %>%
+      mutate(`Absolute Change` = .[[3]] - .[[2]],
+             `Relative Change` = (.[[3]] - .[[2]])/.[[2]]*100) %>%
+      datatable(escape = FALSE,
+                caption = htmltools::tags$caption (style = 'caption-side: top; text-align: center;
+                                                              color: black; font-family: Arial;
+                                                              font-size: 150% ;', 'Population')) %>%
+      formatRound('Absolute Change', digits = 3) %>%
+      formatRound('Relative Change', digits = 3)
+
+  })
+
+
   url <- a("GitHub", href="https://github.com/etc5523-2021/shiny-assessment-ratulwadhwa")
-  url2 <- a("Our World in Data", href="https://cwd.numbat.space/tutorials/tutorial-07sol.html")
+  url2 <- a("Tutorial 7", href="https://cwd.numbat.space/tutorials/tutorial-07sol.html")
+  url3 <- a("Our World in Data", href ="https://ourworldindata.org/grapher/access-to-clean-fuels-for-cooking-vs-gdp-per-capita")
 
   output$about <- renderUI({
     tagList("GitHub URL link:", url ,
-            ", Sources URL link:", url2)
+            ", Sources URL link:", url2,
+            ", Data URL link:", url3)
 
   })
 
